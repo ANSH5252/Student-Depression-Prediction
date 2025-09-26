@@ -1,67 +1,62 @@
 import streamlit as st
-import numpy as np
+import pandas as pd
 import joblib
 
-# Load model, threshold, and scaler
+# Load trained model, scaler, threshold, and feature columns
 model = joblib.load("best_svc_model.pkl")
-threshold = joblib.load("best_threshold.pkl")
 scaler = joblib.load("scaler.pkl")
+threshold = joblib.load("best_threshold.pkl")
+feature_columns = joblib.load("feature_columns.pkl")  # saved from training
 
-st.title("🎓 Student Depression Prediction")
+st.title("🧠 Student Depression Prediction")
 
-st.write("Enter student details below to predict depression risk:")
-
-# Input fields
+# --- Inputs ---
+age = st.number_input("Age", min_value=10, max_value=100, step=1)
 gender = st.selectbox("Gender", ["Male", "Female"])
-age = st.number_input("Age", min_value=10, max_value=40, value=20)
-sleep = st.selectbox("Sleep Duration", ["Less than 5 hours", "5-6 hours", "7-8 hours", "More than 8 hours", "Others"])
-diet = st.selectbox("Dietary Habits", ["Unhealthy", "Moderate", "Healthy", "Others"])
-suicidal = st.selectbox("Ever had suicidal thoughts?", ["No", "Yes"])
-family_history = st.selectbox("Family History of Mental Illness?", ["No", "Yes"])
-academic_pressure = st.slider("Academic Pressure", 0, 10, 5)
-work_pressure = st.slider("Work Pressure", 0, 10, 5)
-cgpa = st.number_input("CGPA", min_value=0.0, max_value=10.0, value=7.5)
-study_satisfaction = st.slider("Study Satisfaction", 0, 10, 5)
-job_satisfaction = st.slider("Job Satisfaction", 0, 10, 5)
-hours = st.number_input("Work/Study Hours", min_value=0, max_value=24, value=6)
-financial_stress = st.slider("Financial Stress", 0, 10, 5)
+cgpa = st.number_input("CGPA", min_value=0.0, max_value=10.0, step=0.1)
+study_hours = st.number_input("Study Hours", min_value=0, max_value=24, step=1)
+social_media = st.number_input("Social Media Hours", min_value=0, max_value=24, step=1)
+sleep = st.selectbox("Sleep Duration", ["<5", "5-6", "7-8", ">8"])
+diet = st.selectbox("Dietary Habits", ["Poor", "Average", "Good"])
+suicidal = st.selectbox("Suicidal Thoughts", ["No", "Yes"])
+family_history = st.selectbox("Family History of Mental Illness", ["No", "Yes"])
 
-# Encoding categorical features (consistent with training)
-gender_val = 1 if gender == "Female" else 0
-suicidal_val = 1 if suicidal == "Yes" else 0
-history_val = 1 if family_history == "Yes" else 0
+# New categorical inputs
+city = st.selectbox("City", ["CityA", "CityB", "CityC"])  # use your actual training cities
+profession = st.selectbox("Profession", ["Student", "Part-time", "Full-time"])  # update list
+degree = st.selectbox("Degree", ["B.Tech", "M.Tech", "MBA", "PhD"])  # update list
 
-sleep_map = {
-    "Less than 5 hours": 0,
-    "5-6 hours": 1,
-    "7-8 hours": 2,
-    "More than 8 hours": 3,
-    "Others": 4
-}
-diet_map = {
-    "Unhealthy": 0,
-    "Moderate": 1,
-    "Healthy": 2,
-    "Others": 3
-}
+# --- Encode inputs into dataframe ---
+input_data = pd.DataFrame({
+    "Age": [age],
+    "Gender": [1 if gender == "Male" else 0],
+    "CGPA": [cgpa],
+    "Study_Hours": [study_hours],
+    "Social_Media_Hours": [social_media],
+    "Sleep_Duration": [sleep],
+    "Dietary_Habits": [diet],
+    "Suicidal_Thoughts": [1 if suicidal == "Yes" else 0],
+    "Family_History": [1 if family_history == "Yes" else 0],
+    "City": [city],
+    "Profession": [profession],
+    "Degree": [degree]
+})
 
-sleep_val = sleep_map[sleep]
-diet_val = diet_map[diet]
+# One-hot encode categorical like training
+input_encoded = pd.get_dummies(input_data, columns=["City", "Profession", "Degree"], drop_first=True)
 
-# Feature vector (must match training X order)
-features = np.array([[ 
-    gender_val, age, academic_pressure, work_pressure, cgpa, study_satisfaction,
-    job_satisfaction, hours, financial_stress, suicidal_val, history_val,
-    sleep_val, diet_val
-]])
+# Ensure same columns as training
+input_encoded = input_encoded.reindex(columns=feature_columns, fill_value=0)
 
-# Prediction button
+# Scale numeric features
+input_scaled = scaler.transform(input_encoded)
+
+# Prediction
 if st.button("Predict"):
-    features_std = scaler.transform(features)
-    proba = model.predict_proba(features_std)[:, 1]
-    prediction = (proba >= threshold).astype(int)[0]
-
-    if prediction == 1:
-        st.error("⚠️ High risk of Depression")
+    pred_proba = model.decision_function(input_scaled)
+    prediction = (pred_proba > threshold).astype(int)
+    
+    if prediction[0] == 1:
+        st.error("⚠️ High risk of Depression detected")
     else:
-        st.success("✅ No Depression Detected")
+        st.success("✅ No significant signs of Depression detected")
