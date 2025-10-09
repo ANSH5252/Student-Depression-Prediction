@@ -2,61 +2,77 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Load trained model, scaler, threshold, and feature columns
-model = joblib.load("best_svc_model.pkl")
-scaler = joblib.load("scaler.pkl")
-threshold = joblib.load("best_threshold.pkl")
-feature_columns = joblib.load("feature_columns.pkl")  # saved from training
+try:
+    model = joblib.load("student_depression_model.pkl")
+    scaler = joblib.load("scaler.pkl")
+    feature_columns = joblib.load("feature_columns.pkl")
+except FileNotFoundError:
+    st.error("Model files not found. Please run the final cell in your Jupyter notebook to save them first.")
+    st.stop()
 
+st.set_page_config(page_title="Student Depression Prediction", page_icon="🧠", layout="centered")
 st.title("🧠 Student Depression Prediction")
+st.write("This app uses the machine learning to predict depression risk based on the inputs below.")
 
-# --- Inputs ---
-age = st.number_input("Age", min_value=10, max_value=100, step=1)
-gender = st.selectbox("Gender", ["Male", "Female"])
-cgpa = st.number_input("CGPA", min_value=0.0, max_value=10.0, step=0.1)
-study_hours = st.number_input("Study Hours", min_value=0, max_value=24, step=1)
-social_media = st.number_input("Social Media Hours", min_value=0, max_value=24, step=1)
-sleep = st.selectbox("Sleep Duration", ["<5", "5-6", "7-8", ">8"])
-diet = st.selectbox("Dietary Habits", ["Poor", "Average", "Good"])
-suicidal = st.selectbox("Suicidal Thoughts", ["No", "Yes"])
-family_history = st.selectbox("Family History of Mental Illness", ["No", "Yes"])
+col1, col2 = st.columns(2)
 
-# New categorical inputs
-city = st.selectbox("City", ["CityA", "CityB", "CityC"])  # use your actual training cities
-profession = st.selectbox("Profession", ["Student", "Part-time", "Full-time"])  # update list
-degree = st.selectbox("Degree", ["B.Tech", "M.Tech", "MBA", "PhD"])  # update list
+with col1:
+    st.subheader("Personal & Academic Info")
+    gender = st.selectbox("Gender", ["Male", "Female"])
+    age = st.number_input("Age", min_value=17, max_value=60, value=21)
+    academic_pressure = st.slider("Academic Pressure (Scale 1-5)", 1, 5, 3)
+    work_pressure = st.slider("Work Pressure (Scale 0-5)", 0, 5, 0)
+    cgpa = st.slider("CGPA (Scale 0-10)", 0.0, 10.0, 7.5)
 
-# --- Encode inputs into dataframe ---
-input_data = pd.DataFrame({
-    "Age": [age],
-    "Gender": [1 if gender == "Male" else 0],
-    "CGPA": [cgpa],
-    "Study_Hours": [study_hours],
-    "Social_Media_Hours": [social_media],
-    "Sleep_Duration": [sleep],
-    "Dietary_Habits": [diet],
-    "Suicidal_Thoughts": [1 if suicidal == "Yes" else 0],
-    "Family_History": [1 if family_history == "Yes" else 0],
-    "City": [city],
-    "Profession": [profession],
-    "Degree": [degree]
-})
+with col2:
+    st.subheader("Satisfaction & Lifestyle")
+    study_satisfaction = st.slider("Study Satisfaction (Scale 0-5)", 0, 5, 3)
+    job_satisfaction = st.slider("Job Satisfaction (Scale 0-4)", 0, 4, 0)
+    sleep_duration = st.selectbox("Average Sleep Duration", ['Less than 5 hours', '5-6 hours', '7-8 hours', 'More than 8 hours', 'Others'])
+    dietary_habits = st.selectbox("Dietary Habits", ['Unhealthy', 'Moderate', 'Healthy', 'Others'])
 
-# One-hot encode categorical like training
-input_encoded = pd.get_dummies(input_data, columns=["City", "Profession", "Degree"], drop_first=True)
+st.subheader("Health & Financials")
+col3, col4 = st.columns(2)
 
-# Ensure same columns as training
-input_encoded = input_encoded.reindex(columns=feature_columns, fill_value=0)
+with col3:
+    suicidal_thoughts = st.selectbox("Have you ever had suicidal thoughts?", ["No", "Yes"])
+    family_history = st.selectbox("Family History of Mental Illness?", ["No", "Yes"])
 
-# Scale numeric features
-input_scaled = scaler.transform(input_encoded)
+with col4:
+    work_study_hours = st.slider("Work/Study Hours per Day", 0, 12, 8)
+    financial_stress = st.slider("Financial Stress (Scale 1-5)", 1, 5, 2)
 
-# Prediction
-if st.button("Predict"):
-    pred_proba = model.decision_function(input_scaled)
-    prediction = (pred_proba > threshold).astype(int)
+if st.button("Predict Depression Risk", type="primary"):
     
-    if prediction[0] == 1:
-        st.error("⚠️ High risk of Depression detected")
+    input_data = {
+        'Gender': gender, 'Age': age, 'Academic Pressure': academic_pressure,
+        'Work Pressure': work_pressure, 'CGPA': cgpa, 'Study Satisfaction': study_satisfaction,
+        'Job Satisfaction': job_satisfaction, 'Sleep Duration': sleep_duration,
+        'Dietary Habits': dietary_habits,
+        'Have you ever had suicidal thoughts ?': suicidal_thoughts,
+        'Work/Study Hours': work_study_hours, 'Financial Stress': financial_stress,
+        'Family History of Mental Illness': family_history
+    }
+    input_df = pd.DataFrame([input_data])
+    input_df['Gender'] = input_df['Gender'].map({'Male': 0, 'Female': 1})
+    input_df['Have you ever had suicidal thoughts ?'] = input_df['Have you ever had suicidal thoughts ?'].map({'No': 0, 'Yes': 1})
+    input_df['Family History of Mental Illness'] = input_df['Family History of Mental Illness'].map({'No': 0, 'Yes': 1})
+    input_df['Sleep Duration'] = input_df['Sleep Duration'].replace({'Less than 5 hours': 0, '5-6 hours': 1, '7-8 hours': 2, 'More than 8 hours': 3, 'Others': 4})
+    input_df['Dietary Habits'] = input_df['Dietary Habits'].replace({'Unhealthy': 0, 'Moderate': 1, 'Healthy': 2, 'Others': 3})
+    input_aligned = input_df.reindex(columns=feature_columns, fill_value=0)
+    input_scaled = scaler.transform(input_aligned)
+    prediction = model.predict(input_scaled)[0]
+    prediction_proba = model.predict_proba(input_scaled)[0][1]
+
+    st.write("---")
+    st.subheader("Prediction Result")
+    
+    if prediction == 1:
+        st.error(f"**High Risk of Depression Detected** (Model Confidence: {prediction_proba:.0%})")
+        st.write("Based on the inputs, the model suggests a higher likelihood of depression. Please consider speaking with a mental health professional.")
     else:
-        st.success("✅ No significant signs of Depression detected")
+        st.success(f"**Low Risk of Depression Detected** (Model Confidence: {1 - prediction_proba:.0%})")
+        st.write("The model indicates a lower likelihood of depression. Continue to maintain a healthy lifestyle and monitor your well-being.")
+    
+    st.progress(prediction_proba)
+    st.info("Disclaimer: This is an AI-powered prediction and is not a substitute for professional medical advice.", icon="ℹ️")
