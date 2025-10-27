@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction{% endblock %}
+
+{% block content %}
+    <div class="text-center">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-2">Student Depression Risk Prediction</h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
+            Input the following features to estimate the student's current risk of depression.
+        </p>
+        <p class="text-sm text-red-600 dark:text-red-400 font-semibold block mt-2 p-3 bg-red-50 dark:bg-red-900/50 rounded-lg max-w-2xl mx-auto">
+            Disclaimer: This tool provides a risk estimate and is not a clinical diagnosis. Always consult a professional for mental health concerns.
+        </p>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800/50 p-6 md:p-8 rounded-xl card mt-8">
+        <form id="prediction-form" method="POST" onsubmit="event.preventDefault(); submitForm();">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+
+                <div class="space-y-6">
+                    <h2 class="text-xl font-semibold border-b border-gray-200 dark:border-gray-700 pb-2 text-blue-600 dark:text-blue-400">Personal & Academic Factors</h2>
+                    
+                    <div>
+                        <label for="gender" class="input-label">Gender</label>
+                        <select name="gender" id="gender" required class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="age" class="input-label">Age (17-60)</label>
+                        <input type="number" name="age" id="age" min="17" max="60" value="21" required class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                    </div>
+
+                    <div>
+                        <label for="academic_pressure" class="input-label">Academic Pressure: <span class="font-bold text-blue-600 dark:text-blue-400" id="ap_value">3</span> / 5</label>
+                        <input type="range" name="academic_pressure" id="academic_pressure" min="1" max="5" value="3">
+                    </div>
+
+                    <div>
+                        <label for="cgpa" class="input-label">CGPA: <span class="font-bold text-blue-600 dark:text-blue-400" id="cgpa_value">7.5</span> / 10.0</label>
+                        <input type="range" name="cgpa" id="cgpa" min="0.0" max="10.0" step="0.1" value="7.5">
+                    </div>
+
+                    <div>
+                        <label for="work_study_hours" class="input-label">Work/Study Hours per week</label>
+                        <input type="number" name="work_study_hours" id="work_study_hours" min="0" max="100" value="40" required class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                    </div>
+
+                    <div>
+                        <label for="work_pressure" class="input-label">Work Pressure: <span class="font-bold text-blue-600 dark:text-blue-400" id="wp_value">0</span> / 5</label>
+                        <input type="range" name="work_pressure" id="work_pressure" min="0" max="5" value="0">
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <h2 class="text-xl font-semibold border-b border-gray-200 dark:border-gray-700 pb-2 text-blue-600 dark:text-blue-400">Lifestyle & Satisfaction Factors</h2>
+                    
+                    <div>
+                        <label for="study_satisfaction" class="input-label">Study Satisfaction: <span class="font-bold text-blue-600 dark:text-blue-400" id="ss_value">3</span> / 5</label>
+                        <input type="range" name="study_satisfaction" id="study_satisfaction" min="0" max="5" value="3">
+                    </div>
+
+                    <div>
+                        <label for="job_satisfaction" class="input-label">Job Satisfaction: <span class="font-bold text-blue-600 dark:text-blue-400" id="js_value">0</span> / 5</label>
+                        <input type="range" name="job_satisfaction" id="job_satisfaction" min="0" max="5" value="0">
+                    </div>
+                    
+                    <div>
+                        <label for="sleep_duration" class="input-label">Sleep Duration</label>
+                        <select name="sleep_duration" id="sleep_duration" required class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                            <option value="7-8 hours">7-8 hours</option>
+                            <option value="5-6 hours">5-6 hours</option>
+                            <option value="Less than 5 hours">Less than 5 hours</option>
+                            <option value="More than 8 hours">More than 8 hours</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="dietary_habits" class="input-label">Dietary Habits</label>
+                        <select name="dietary_habits" id="dietary_habits" required class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                            <option value="Healthy">Healthy</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="Unhealthy">Unhealthy</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="financial_stress" class="input-label">Financial Stress Level</label>
+                        <select name="financial_stress" id="financial_stress" required class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                            <option value="Low">Low</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="High">High</option>
+                            <option value="Severe">Severe</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="family_history" class="input-label">Family History of Mental Illness?</label>
+                        <select name="family_history" id="family_history" required class="w-full p-2.5 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="suicidal_thoughts" class="input-label text-red-700 dark:text-red-400">Have you ever had suicidal thoughts?</label>
+                        <select name="suicidal_thoughts" id="suicidal_thoughts" required class="w-full p-2.5 bg-red-50 border border-red-400 text-red-900 rounded-lg focus:ring-red-500 focus:border-red-500 dark:bg-red-900/50 dark:border-red-500 dark:placeholder-gray-400 dark:text-red-300 font-semibold">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex justify-center">
+                <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full transition duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800">
+                    <span id="button-text">Check Depression Risk</span>
+                    <svg id="loading-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="result-container" class="mt-8 p-6 md:p-8 rounded-xl transition duration-500 text-center hidden">
+        <h2 class="text-3xl font-bold mb-3" id="result-title"></h2>
+        <p class="text-lg" id="result-message"></p>
+        <p class="text-sm mt-4 font-mono" id="result-confidence"></p>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize display for range inputs
+    document.addEventListener('DOMContentLoaded', () => {
+        const rangeInputs = [
+            { id: 'academic_pressure', displayId: 'ap_value' },
+            { id: 'cgpa', displayId: 'cgpa_value' },
+            { id: 'work_pressure', displayId: 'wp_value' },
+            { id: 'study_satisfaction', displayId: 'ss_value' },
+            { id: 'job_satisfaction', displayId: 'js_value' }
+        ];
+
+        rangeInputs.forEach(item => {
+            const input = document.getElementById(item.id);
+            const display = document.getElementById(item.displayId);
+            
+            if (input && display) {
+                input.addEventListener('input', () => {
+                    display.textContent = input.value;
+                });
+            }
+        });
+    });
+
+    // Function to handle form submission and AJAX call
+    async function submitForm() {
+        const form = document.getElementById('prediction-form');
+        const formData = new FormData(form);
+        const resultContainer = document.getElementById('result-container');
+        const submitBtn = document.getElementById('submit-btn');
+        const buttonText = document.getElementById('button-text');
+        const loadingSpinner = document.getElementById('loading-spinner');
+
+        // Show loading state
+        buttonText.textContent = "Processing...";
+        loadingSpinner.classList.remove('hidden');
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                displayResult('Error', `Server HTTP Error: ${response.status} ${response.statusText}. Please check server logs.`, 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200 border border-red-400 dark:border-red-600');
+                console.error("Server Error:", errorText);
+                return;
+            }
+
+            const result = await response.json();
+
+            if (result.error) {
+                displayResult('Error', `Prediction Failed: ${result.error}`, 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200 border border-red-400 dark:border-red-600');
+                return;
+            }
+
+            const { prediction, risk_proba, safety_proba } = result;
+
+            // Display Results
+            let title, message, confidence, classes;
+            
+            if (prediction === 1) {
+                // High Risk
+                title = "🚨 High Risk of Depression Detected";
+                message = "The combination of inputs suggests a significantly elevated risk of depression. Immediate action and professional consultation are strongly recommended.";
+                confidence = `Model Risk Confidence: ${risk_proba}%`;
+                classes = 'bg-red-100 dark:bg-red-900/50 text-red-900 dark:text-red-200 border border-red-300 dark:border-red-600';
+            } else {
+                // Low Risk
+                title = "✅ Low Risk of Depression Detected";
+                message = "The inputs suggest a low current risk. Continue maintaining a healthy balance in your life.";
+                confidence = `Model Safety Confidence: ${safety_proba}%`;
+                classes = 'bg-green-100 dark:bg-green-900/50 text-green-900 dark:text-green-200 border border-green-300 dark:border-green-600';
+            }
+
+            displayResult(title, message, classes, confidence);
+            resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        } catch (error) {
+            displayResult('Error', `A connection error occurred: ${error.message}.`, 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200 border border-red-400 dark:border-red-600', '');
+        } finally {
+            // Revert loading state
+            buttonText.textContent = "Check Depression Risk";
+            loadingSpinner.classList.add('hidden');
+            submitBtn.disabled = false;
+        }
+    }
+
+    function displayResult(title, message, classes, confidence = '') {
+        const resultContainer = document.getElementById('result-container');
+        const resultTitle = document.getElementById('result-title');
+        const resultMessage = document.getElementById('result-message');
+        const resultConfidence = document.getElementById('result-confidence');
+
+        resultContainer.className = `mt-8 p-6 md:p-8 rounded-xl transition duration-500 text-center ${classes}`;
+        resultTitle.textContent = title;
+        resultMessage.textContent = message;
+        resultConfidence.textContent = confidence;
+        resultContainer.classList.remove('hidden');
+    }
+</script>
+{% endblock %}
